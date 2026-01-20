@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Invoice | Sedulur Foto Copy</title>
+<link rel="icon" href="img/loggo/sdlr.png">
+<link rel="stylesheet" href="css/invoce.css">
+</head>
+<body>
+
+<!-- NAVBAR (tidak masuk PDF) -->
+<header class="no-print">
+  <div class="logo">
+    <a href="home.html"><img src="img/loggo/sdlr.png" alt="Sedulur Foto Copy"></a>
+  </div>
+  <nav>
+    <ul>
+      <li><a href="home.html">Home</a></li>
+      <li><a href="cetakfoto.html">Cetak Foto</a></li>
+      <li><a href="cetakinvoice.html">Invoice</a></li>
+      <li><button class="btn-logout" onclick="logout()">Logout</button></li>
+    </ul>
+  </nav>
+</header>
+
+<!-- AREA NOTA -->
+<div id="notaArea">
+  <div class="header">
+    <img src="img/loggo/logo1.png" class="logo">
+    <div class="info">
+      <small>Tanggal: <span id="tgl"></span></small><br>
+      <small>No Nota: <span id="noNota"></span></small><br>
+      <small>Pelanggan: <span id="namaView">-</span></small><br>
+      <small>Admin: <span id="adminName">-</span></small>
+    </div>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Deskripsi</th>
+        <th>Harga</th>
+        <th>Lembar</th>
+        <th>Qty</th>
+        <th>Subtotal</th>
+      </tr>
+    </thead>
+    <tbody id="list"></tbody>
+  </table>
+
+  <div class="total">Total: Rp <span id="totalView">0</span></div>
+  <div class="total">Diskon: Rp <span id="discountView">0</span></div>
+  <div class="grand-total">Grand Total: Rp <span id="grandTotalView">0</span></div>
+</div>
+
+<!-- INPUT PELANGGAN -->
+<div class="no-print">
+  <input type="text" id="namaPelanggan" placeholder="Nama Pelanggan">
+</div>
+
+<!-- SELECT + INPUT -->
+<div class="select-area no-print">
+
+<select id="layanan">
+  <option value="300" data-type="print">Print Hitam Putih</option>
+  <option value="500" data-type="print">Print Warna Kecil</option>
+  <option value="1500" data-type="print">Print Warna Sedang</option>
+  <option value="2000" data-type="print">Print Warna Penuh</option>
+  <option value="1000" data-type="jilid">Print Amplop</option>
+  <option value="500" data-type="print">HP Bolak Balik</option>
+
+  <option value="4000" data-type="print">A3 HVS</option>
+  <option value="8000" data-type="print">A3 Buffalo</option>
+  <option value="10000" data-type="print">A3 Glossy</option>
+
+  <option value="40000" data-type="jilid">Hardcover</option>
+  <option value="4000" data-type="jilid">Jilid Mika</option>
+  <option value="15000" data-type="jilid">Softcover</option>
+  <option value="18000" data-type="jilid">Softcover Sambung</option>
+
+  <option value="1000" data-type="jilid">Map Kertas</option>
+  <option value="4000" data-type="jilid">Map Plastik</option>
+  <option value="1000" data-type="jilid">Binderclip 155</option>
+  <option value="2000" data-type="jilid">Binderclip 200</option>
+
+  <option value="manual" data-type="manual">➕ Input Manual</option>
+</select>
+
+<div id="manualBox" style="display:none; gap:5px">
+  <input type="text" id="manualNama" placeholder="Nama barang / jasa">
+  <input type="number" id="manualHarga" placeholder="Harga satuan">
+</div>
+
+<input type="number" id="lembar" value="1" min="1">
+<input type="number" id="qty" value="1" min="1">
+<button onclick="tambah()">Tambah</button>
+</div>
+
+<!-- DISKON -->
+<div class="no-print discount-area">
+  <button onclick="toggleDiscount()">Aktifkan / Nonaktifkan Diskon Admin</button>
+  <small id="discountStatus">Diskon NONAKTIF</small>
+</div>
+
+
+<!-- BUTTON -->
+<div class="no-print btn-group">
+  <button onclick="window.print()">Print</button>
+  <button onclick="downloadPDF()">PDF</button>
+  <button onclick="location.reload()">Reset</button>
+</div>
+
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+<script>
+const layanan = document.getElementById("layanan");
+const lembarInput = document.getElementById("lembar");
+const qtyInput = document.getElementById("qty");
+const list = document.getElementById("list");
+const totalView = document.getElementById("totalView");
+const discountView = document.getElementById("discountView");
+const grandTotalView = document.getElementById("grandTotalView");
+const namaView = document.getElementById("namaView");
+const namaPelanggan = document.getElementById("namaPelanggan");
+const discountStatus = document.getElementById("discountStatus");
+const manualBox = document.getElementById("manualBox");
+
+let discountEnabled = false;
+const ADMIN_PASSWORD = "1234";
+const DISCOUNT_PERCENT = 0.07;
+const MIN_DISCOUNT = 200000;
+
+document.getElementById("noNota").innerText = "INV-" + Date.now();
+const d = new Date();
+document.getElementById("tgl").innerText =
+`${d.getDate()}-${d.getMonth()+1}-${d.getFullYear()}`;
+
+namaPelanggan.oninput = () => { namaView.innerText = namaPelanggan.value || "-"; };
+
+layanan.onchange = () => {
+  const opt = layanan.selectedOptions[0];
+  const type = opt.dataset.type;
+
+  if(type === "jilid" || type === "manual"){
+    lembarInput.value = 1;
+    lembarInput.disabled = true;
+  } else {
+    lembarInput.disabled = false;
+  }
+
+  manualBox.style.display = type === "manual" ? "flex" : "none";
+};
+
+function bulatkan500(n){ return Math.ceil(n / 500) * 500; }
+
+function tambah(){
+  const opt = layanan.selectedOptions[0];
+  const type = opt.dataset.type;
+
+  let harga, nama;
+
+  if(type === "manual"){
+    nama = manualNama.value.trim();
+    harga = +manualHarga.value;
+    if(!nama || !harga){
+      alert("Isi nama dan harga manual!");
+      return;
+    }
+  } else {
+    harga = +opt.value;
+    nama = opt.text.toLowerCase();
+  }
+
+  const qty = +qtyInput.value;
+  const lembar = (type === "jilid" || type === "manual") ? 1 : +lembarInput.value;
+
+  let sub = (type === "jilid" || type === "manual")
+    ? harga * qty
+    : harga * lembar * qty;
+
+  if(nama.includes("hitam putih")) sub = bulatkan500(sub);
+
+  const tr = document.createElement("tr");
+  tr.dataset.sub = sub;
+  tr.innerHTML = `
+    <td>${type === "manual" ? nama : opt.text}</td>
+    <td>${harga.toLocaleString()}</td>
+    <td>${(type === "jilid" || type === "manual") ? "-" : lembar}</td>
+    <td>${qty}</td>
+    <td>${sub.toLocaleString()}</td>
+  `;
+  list.appendChild(tr);
+  hitung();
+}
+
+function hitung(){
+  let total = 0;
+  document.querySelectorAll("#list tr").forEach(tr => total += +tr.dataset.sub);
+  let discount = 0;
+  if(discountEnabled && total >= MIN_DISCOUNT) discount = Math.floor(total * DISCOUNT_PERCENT);
+
+  totalView.innerText = total.toLocaleString();
+  discountView.innerText = discount.toLocaleString();
+  grandTotalView.innerText = (total - discount).toLocaleString();
+}
+
+function toggleDiscount() {
+  const pass = prompt("Masukkan password admin:");
+  if(pass !== ADMIN_PASSWORD){
+    alert("Password salah!");
+    return;
+  }
+  discountEnabled = !discountEnabled;
+  discountStatus.innerText = discountEnabled ? "Diskon AKTIF" : "Diskon NONAKTIF";
+  hitung();
+}
+
+function downloadPDF() {
+  const element = document.getElementById("notaArea");
+  let nama = namaPelanggan.value || "Pelanggan";
+  nama = nama.replace(/[^a-z0-9]/gi, "_");
+
+  html2pdf().set({
+    margin: 10,
+    filename: `Invoice_${nama}.pdf`,
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2 },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+  }).from(element).save();
+}
+</script>
+
+</body>
+</html>

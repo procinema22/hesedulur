@@ -1,0 +1,145 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: Arial, Helvetica, sans-serif;
+  }
+  
+  body {
+    min-height: 100vh;
+    background:
+      linear-gradient(rgba(0,0,0,.65), rgba(0,0,0,.85)),
+      url("../img/baner/bg.png") center/cover no-repeat;
+    color: #fff;
+  }
+  
+  /* ===== NAVBAR ===== */
+  .auth-navbar {
+    padding: 24px 48px;
+  }
+  
+  .nav-container {
+    max-width: 1200px;
+    margin: auto;
+  }
+  
+  .nav-logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 26px;
+    font-weight: 800;
+    color: #e50914;
+  }
+  
+  .nav-logo img {
+    height: 40px;
+  }
+  
+  /* ===== LOGIN WRAPPER ===== */
+  .auth-wrapper {
+    min-height: calc(100vh - 90px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+  }
+  
+  /* ===== LOGIN BOX ===== */
+  .login-box {
+    width: 100%;
+    max-width: 420px;
+    background: rgba(0,0,0,.75);
+    padding: 60px 50px 50px;
+    border-radius: 6px;
+  }
+  
+  .login-box h2 {
+    font-size: 32px;
+    font-weight: 700;
+    margin-bottom: 28px;
+  }
+  
+  /* ===== INPUT ===== */
+  .input-group {
+    position: relative;
+    margin-bottom: 16px;
+  }
+  
+  .input-group input {
+    width: 100%;
+    height: 50px;
+    background: #333;
+    border: none;
+    border-radius: 4px;
+    padding: 16px 14px 0;
+    color: #fff;
+    font-size: 15px;
+    outline: none;
+  }
+  
+  .input-group label {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #8c8c8c;
+    font-size: 14px;
+    transition: .2s;
+    pointer-events: none;
+  }
+  
+  .input-group input:focus + label,
+  .input-group input:valid + label {
+    top: 7px;
+    font-size: 11px;
+  }
+  
+  /* ===== BUTTON ===== */
+  button {
+    width: 100%;
+    height: 48px;
+    margin-top: 24px;
+    background: #e50914;
+    border: none;
+    border-radius: 4px;
+    font-size: 16px;
+    font-weight: bold;
+    color: white;
+    cursor: pointer;
+  }
+  
+  button:hover {
+    background: #f6121d;
+  }
+  
+  /* ===== TOGGLE ===== */
+  #toggleText {
+    margin-top: 30px;
+    font-size: 15px;
+    color: #737373;
+  }
+  
+  #toggleText a {
+    color: #fff;
+    text-decoration: none;
+  }
+  
+  #toggleText a:hover {
+    text-decoration: underline;
+  }
+  
+  /* ===== ERROR ===== */
+  .error {
+    margin-top: 15px;
+    color: #e87c03;
+    font-size: 14px;
+  }
+  
+  /* ===== RESPONSIVE ===== */
+  @media(max-width:500px){
+    .login-box {
+      padding: 40px 28px;
+    }
+  }
+  
