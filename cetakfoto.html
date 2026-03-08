@@ -19,19 +19,16 @@
 <!-- ================= NAVBAR ================= -->
 <header>
   <div class="logo">
-    <a href="home.html">
+    <a href="index.html">
       <img src="img/loggo/sdlr.png" alt="Sedulur Foto Copy">
     </a>
   </div>
 
   <nav>
     <ul>
-      <li><a href="home.html">Home</a></li>
-      <li><a href="cetakfoto.html" class="active">Cetak Foto</a></li>
-      <li><a href="cetakinvoice.html">Invoice</a></li>
-      <li>
-        <button class="btn-logout" onclick="logout()">Logout</button>
-      </li>
+      <li><a href="index.html">Home</a></li>
+      <li><a href="cetakfoto.html" class="active">Cetak Foto</a></li>  
+      
     </ul>
   </nav>
 </header>
@@ -42,7 +39,7 @@
   <!-- ========= PANEL KIRI ========= -->
   <aside class="left-panel">
 
-    <h2 class="section-title">SEDANG ADA UPDATE – SABAR YA</h2>
+    <h2 class="section-title">TERIMA KASIH SUDAH MENGUNAKAN LAYANAN KAMI</h2>
 
     <label>Pilih Mode Cetak</label>
     <select id="modeSelect">
@@ -85,7 +82,12 @@
 
     <div id="manualHargaBox" style="display:none;">
       <label>Harga Manual (Rp)</label>
-      <input id="manualHargaInput" type="number" value="1000">
+      <input 
+  id="manualHargaInput"
+  type="number"
+  value="500"
+  min="500"
+  step="500">
     </div>
 
     <label>
