@@ -47,7 +47,7 @@
     /* ---------------------------
         Constants & state
         --------------------------- */
-    const PREVIEW_SCALE = 0.2;
+    const PREVIEW_SCALE = 0.25;
     const PX_PER_CM = 118; // px per cm for 300dpi ~ approximate mapping used in original script
     const STORAGE_KEY = 'cetakfoto_v3_placements';
     
@@ -273,7 +273,7 @@
               EXIF.getData(file, function () { orientation = EXIF.getTag(this, 'Orientation') || 1; });
             }
             img.onload = () => {
-              const maxDim = mode === "pdf" ? 2000 : 1200;
+              const maxDim = mode === "pdf" ? 2500 : 1500;
               const quality = mode === "pdf" ? 0.92 : 0.8;
               let iw = img.width, ih = img.height;
               let scale = Math.min(1, maxDim / Math.max(iw, ih));
@@ -364,7 +364,6 @@
     async function buildPlacementsForPages() {
       placementsByPage = [];
       const fullW = 2480, fullH = 3508;
-      const footerSpace = 300; // tinggi area footer (px)
       const pxPerCm = PX_PER_CM;
       const marginPx = (Math.max(0, parseFloat(marginInputMm ? marginInputMm.value : 1) || 1) / 10) * pxPerCm;
       const gap = Math.max(0, parseInt(gapInput ? gapInput.value : 10) || 10);
@@ -381,7 +380,7 @@
             for (const file of batch.files) {
               const imgObj = await loadImageWithEXIF(file, 'preview'); if (!imgObj) continue;
               if (x + diameterPx > fullW - marginPx) { x = marginPx; y += rowMaxH + gap; rowMaxH = 0; }
-              if (y + diameterPx > fullH - marginPx - footerSpace) { pageIdx++; placementsByPage[pageIdx] = []; x = marginPx; y = marginPx; rowMaxH = 0; }
+              if (y + diameterPx > fullH - marginPx) { pageIdx++; placementsByPage[pageIdx] = []; x = marginPx; y = marginPx; rowMaxH = 0; }
               const key = fileKeyFor(file);
               const saved = loadSavedForKey(key);
               placementsByPage[pageIdx].push({
@@ -401,7 +400,7 @@
             for (const file of batch.files) {
               const imgObj = await loadImageWithEXIF(file, 'preview'); if (!imgObj) continue;
               if (x + boxW > fullW - marginPx) { x = marginPx; y += rowMaxH + gap; rowMaxH = 0; }
-              if (y + boxH > fullH - marginPx - footerSpace){ pageIdx++; placementsByPage[pageIdx] = []; x = marginPx; y = marginPx; rowMaxH = 0; }
+              if (y + boxH > fullH - marginPx) { pageIdx++; placementsByPage[pageIdx] = []; x = marginPx; y = marginPx; rowMaxH = 0; }
               const key = fileKeyFor(file);
               const saved = loadSavedForKey(key);
               placementsByPage[pageIdx].push({
@@ -730,140 +729,102 @@
     };
     
     /* ---------------------------
-       /* ---------------------------
-    Download / Open PDF (with watermark & footer)
---------------------------- */
-if (downloadPdf) downloadPdf.onclick = async () => {
+        Download / Open PDF (with watermark & footer)
+        --------------------------- */
+        if (downloadPdf) downloadPdf.onclick = async () => {
 
-  const result = await renderAllPagesToCanvases();
-  const pages = result.pages;
-
-  if (!pages.length) return alert('Silakan klik "📄 Buat Kolase" terlebih dahulu.');
-
-  if (!batches.length) return alert('Belum ada foto/batch.');
-  if (!hideInfo || !hideInfo.checked) {
-    if (!userName || !userName.value.trim()) {
-      return alert('Silakan isi nama terlebih dahulu sebelum membuat PDF!');
-    }
-  }
-
-  downloadPdf.disabled = true;
-  const prevText = downloadPdf.textContent;
-  downloadPdf.textContent = '⏳ Menyiapkan PDF...';
-
-  try {
-    let totalHarga = 0;
-    try {
-      totalHarga = parseInt(priceDisplay.textContent.replace(/[^\d]/g, '')) || 0;
-    } catch (e) { totalHarga = 0; }
-
-    // ✅ FOOTER DI HALAMAN PERTAMA
-    const firstCanvas = document.createElement('canvas');
-    firstCanvas.width = pages[0].width;
-    firstCanvas.height = pages[0].height;
-    const firstCtx = firstCanvas.getContext('2d');
-
-    // gambar halaman pertama
-    firstCtx.drawImage(pages[0], 0, 0);
-
-    if (!hideInfo.checked) {
-      const fullW = firstCanvas.width;
-      const fullH = firstCanvas.height;
-
-      const margin = 120;
-      const startY = fullH - 260;
-
-      firstCtx.save();
-
-      // garis atas
-      firstCtx.strokeStyle = "#000";
-      firstCtx.lineWidth = 2;
-      firstCtx.beginPath();
-      firstCtx.moveTo(margin, startY - 50);
-      firstCtx.lineTo(fullW - margin, startY - 50);
-      firstCtx.stroke();
-
-      // judul
-      firstCtx.font = "bold 46px Poppins";
-      firstCtx.fillStyle = "#000";
-      firstCtx.textAlign = "center";
-      firstCtx.fillText("SEDULUR FOTO COPY & PRINTING", fullW / 2, startY);
-
-      // detail
-      firstCtx.textAlign = "left";
-      firstCtx.font = "40px Poppins";
-
-      const tanggal = new Date().toLocaleDateString("id-ID", {
-        day: "numeric",
-        month: "long",
-        year: "numeric"
-      });
-
-      let y = startY + 70;
-
-      firstCtx.fillText(`Nama     : ${userName.value || '-'}`, margin, y);
-      y += 60;
-
-      
-
-      
-
-      // harga kanan
-      firstCtx.textAlign = "right";
-      firstCtx.font = "bold 44px Poppins";
-      firstCtx.fillText(`Rp ${totalHarga.toLocaleString()}`, fullW - margin, y);
-
-      // garis bawah
-      firstCtx.beginPath();
-      firstCtx.moveTo(margin, y + 25);
-      firstCtx.lineTo(fullW - margin, y + 25);
-      firstCtx.stroke();
-
-      firstCtx.restore();
-    }
-
-    // buat PDF
-    const { jsPDF } = window.jspdf;
-    const pdf = new jsPDF('p', 'pt', 'a4');
-
-    for (let i = 0; i < pages.length; i++) {
-
-      const pg = (i === 0) ? firstCanvas : pages[i];
-
-      if (i > 0) pdf.addPage();
-
-      pdf.addImage(pg.toDataURL('image/jpeg', 0.92), 'JPEG', 0, 0, 595, 842);
-
-      // watermark
-      if (watermarkEnabled && watermarkImg.complete) {
-        const wmScale = 0.40;
-        const wmW = 595 * wmScale;
-        const wmH = wmW * (watermarkImg.height / watermarkImg.width);
-        const wmX = (595 - wmW) / 2;
-        const wmY = (842 - wmH) / 2;
-
-        if (pdf.setGState && typeof pdf.GState === 'function') {
-          const gs = pdf.GState({ opacity: 0.25 });
-          pdf.setGState(gs);
-          pdf.addImage(watermarkImg, "PNG", wmX, wmY, wmW, wmH, undefined, "FAST");
-          pdf.setGState(pdf.GState({ opacity: 1 }));
-        } else {
-          pdf.addImage(watermarkImg, "PNG", wmX, wmY, wmW, wmH, undefined, "FAST");
+          const result = await renderAllPagesToCanvases();
+          const pages = result.pages;
+        
+          if (!pages.length) return alert('Silakan klik "📄 Buat Kolase" terlebih dahulu.');
+    
+      if (!batches.length) return alert('Belum ada foto/batch.');
+      if (!hideInfo || !hideInfo.checked) {
+        if (!userName || !userName.value.trim()) {
+          return alert('Silakan isi nama terlebih dahulu sebelum membuat PDF!');
         }
       }
-    }
-
-    const blob = pdf.output('blob');
-    window.open(URL.createObjectURL(blob), '_blank');
-
-  } catch (err) {
-    console.error(err);
-    alert('Gagal membuat PDF.');
-  } finally {
-    downloadPdf.disabled = false;
-    downloadPdf.textContent = prevText || '💾 Buka PDF di Tab Baru';
-  }
-};
+      if (!pagesCache.length) return alert('Silakan klik "📄 Buat Kolase" terlebih dahulu sebelum membuka PDF.');
+    
+      downloadPdf.disabled = true;
+      const prevText = downloadPdf.textContent;
+      downloadPdf.textContent = '⏳ Menyiapkan PDF...';
+    
+      try {
+        const result = await renderAllPagesToCanvases();
+        const pages = result.pages;
+        let totalHarga = 0;
+        try { totalHarga = parseInt(priceDisplay.textContent.replace(/[^\d]/g, '')) || 0; } catch (e) { totalHarga = 0; }
+    
+        // attach footer on last page canvas copy (so we don't mutate cached canvas shown to user)
+        const lastCanvas = document.createElement('canvas');
+        lastCanvas.width = pages[pages.length - 1].width;
+        lastCanvas.height = pages[pages.length - 1].height;
+        const lastCtx = lastCanvas.getContext('2d');
+        lastCtx.drawImage(pages[pages.length - 1], 0, 0);
+    
+        const fullW = lastCanvas.width, fullH = lastCanvas.height;
+        const pxPerCm = PX_PER_CM;
+        const footerHeightMm = 20;
+        const footerPx = (footerHeightMm / 10) * pxPerCm;
+        const footerX = 100;
+        const footerYName = fullH - footerPx + 30;
+        const footerYPrice = footerYName + 60;
+    
+        if (!hideInfo.checked) {
+          lastCtx.save();
+        
+          // reset transform supaya tidak ikut zoom dari canvas
+          lastCtx.setTransform(1, 0, 0, 1, 0, 0);
+        
+          lastCtx.font = "48px Poppins, sans-serif";
+          lastCtx.fillStyle = "#333";
+        
+          lastCtx.fillText(`Nama: ${userName.value || '-'}`, footerX, footerYName);
+          lastCtx.fillText(`Harga: Rp ${totalHarga.toLocaleString()}`, footerX, footerYPrice);
+        
+          lastCtx.restore();
+        }
+        // build PDF using jsPDF
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF('p', 'pt', 'a4');
+    
+        for (let i = 0; i < pages.length; i++) {
+          const pg = (i === pages.length - 1) ? lastCanvas : pages[i];
+          if (i > 0) pdf.addPage();
+          pdf.addImage(pg.toDataURL('image/jpeg', 0.92), 'JPEG', 0, 0, 595, 842);
+    
+          // watermark in PDF (centered)
+          if (watermarkEnabled && watermarkImg.complete) {
+            const wmScale = 0.40;
+            const wmW = 595 * wmScale;
+            const wmH = wmW * (watermarkImg.height / watermarkImg.width);
+            const wmX = (595 - wmW) / 2;
+            const wmY = (842 - wmH) / 2;
+            if (pdf.setGState && typeof pdf.GState === 'function') {
+              const gs = pdf.GState({ opacity: 0.25 });
+              pdf.setGState(gs);
+              pdf.addImage(watermarkImg, "PNG", wmX, wmY, wmW, wmH, undefined, "FAST");
+              const gsNormal = pdf.GState({ opacity: 1 });
+              pdf.setGState(gsNormal);
+            } else {
+              // fallback: add without opacity setting
+              pdf.addImage(watermarkImg, "PNG", wmX, wmY, wmW, wmH, undefined, "FAST");
+            }
+          }
+        }
+    
+        const blob = pdf.output('blob');
+        window.open(URL.createObjectURL(blob), '_blank');
+    
+      } catch (err) {
+        console.error(err);
+        alert('Gagal membuat PDF.');
+      } finally {
+        downloadPdf.disabled = false;
+        downloadPdf.textContent = prevText || '💾 Buka PDF di Tab Baru';
+      }
+    };
     
     /* ---------------------------
         Save on unload
